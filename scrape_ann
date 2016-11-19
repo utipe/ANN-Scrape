@@ -1,0 +1,119 @@
+# Scrape the staff of each anime and their roles!
+import requests
+import json
+import re
+import csv
+from bs4 import BeautifulSoup
+# Link to the website api address
+baseurl="http://cdn.animenewsnetwork.com/encyclopedia/api.xml"
+# Read in the anime ids
+with open('test.csv',newline='',encoding='utf-8') as csvfile:
+    # Write out the contents related to this anime
+    with open('test1.csv','w',newline='',encoding='utf-8') as csv1:
+        # Write out the list of cast, their id, name, role associated with this anime
+        with open('test2.csv','w',newline='',encoding='utf-8') as csv2:
+            # Write out the list of staff, their id, name, position associated with this anime
+            with open('test3.csv','w',newline='',encoding='utf-8') as csv3:
+                # Write out the relationship between this anime and others (including manga and anime)
+                with open('test4.csv','w',newline='',encoding='utf-8') as csv4:
+                    # Write out all the genre this anime belongs to:
+                    with open('test5.csv','w',newline='',encoding='utf-8') as csv5:
+                        # Write out all the themes this anime belongs to:
+                        with open('test6.csv','w',newline='',encoding='utf-8') as csv6:
+                            # Write out all the vintage this anime belongs to:
+                            with open('test7.csv','w',newline='',encoding='utf-8') as csv7:
+                                rder = csv.reader(csvfile,delimiter=' ')
+                                filmcsv = csv.writer(csv1,delimiter=',')
+                                castcsv = csv.writer(csv2,delimiter=',')
+                                staffcsv = csv.writer(csv3,delimiter=',')
+                                relatecsv = csv.writer(csv4,delimiter=',')
+                                genrecsv = csv.writer(csv5,delimiter=',')
+                                themecsv = csv.writer(csv6,delimiter=',')
+                                vintagecsv = csv.writer(csv7,delimiter=',')
+                                # looping over each anime's id
+                                for i in rder:
+                                    anime = {"anime":int(i[0])}
+                                    response=requests.get(baseurl,params=anime)
+                                    # Check if we successfully accessed the website
+                                    if response.status_code==200:
+                                        data=BeautifulSoup(response.content,"html.parser")
+                                        # Find all the cast related to this anime
+                                        cast = data.findAll('cast')
+                                        # Find all the staff related to this anime
+                                        staff = data.findAll('staff')
+                                        # Find all the relationship of this anime to other animes/mangas:
+                                        relate = data.findAll(re.compile('^related'))
+                                        # Find all the genre this anime belongs to:
+                                        genre = data.findAll('info', type='Genres')
+                                        # Find all the theme this anime belongs to:
+                                        theme = data.findAll('info', type='Themes')
+                                        # Find all of this anime's vintage: (write the first one to anime characteristics)
+                                        vintage = data.findAll('info', type='Vintage')
+                                        # Find the total number of episodes released so far - Check if it's a movie or not
+                                        episode = data.findAll('episode')
+                                        if len(episode)>0:
+                                            num = float(episode[-1]['num'])
+                                        else:
+                                            num = 0
+                                        # Write down cast data into castcsv
+                                        if len(cast)>0:
+                                            for k in cast:
+                                                temp = [i[0],k.person['id'],k.person.get_text(),k.role.get_text(),k['lang']]
+                                                print(temp)
+                                                castcsv.writerow(temp)
+                                        else:
+                                            temp = [i[0],'None','None','None','None']
+                                            castcsv.writerow(temp)
+                                        # Writedown staff data into staffcsv
+                                        if len(staff)>0:
+                                            for k in staff:
+                                                temp=[i[0],k.person['id'],k.person.get_text(),k.task.get_text()]
+                                                print(temp)
+                                                staffcsv.writerow(temp)
+                                        else:
+                                            temp = [i[0],'None','None','None']
+                                            staffcsv.writerow(temp)
+                                        # Write down the relationship
+                                        if len(relate)>0:
+                                            for k in relate:
+                                                temp = [i[0],k['id'],k['rel']]
+                                                print(temp)
+                                                relatecsv.writerow(temp)
+                                        else:
+                                            temp = [i[0],'None','None']
+                                            relatecsv.writerow(temp)
+                                        # Write down all the genre
+                                        if len(genre)>0:
+                                            for k in genre:
+                                                temp = [i[0],k.get_text()]
+                                                print(temp)
+                                                genrecsv.writerow(temp)
+                                        else:
+                                            temp = [i[0],'None']
+                                            genrecsv.writerow(temp)
+                                        # Write down all themes:
+                                        if len(theme)>0:
+                                            for k in theme:
+                                                temp = [i[0],k.get_text()]
+                                                print(temp)
+                                                themecsv.writerow(temp)
+                                        else:
+                                            temp = [i[0],'None']
+                                            themecsv.writerow(temp)
+                                        # Write down vintage:
+                                        if len(vintage)>0:
+                                            for k in vintage:
+                                                temp = [i[0],k.get_text()]
+                                                print(temp)
+                                                vintagecsv.writerow(temp)
+                                        else:
+                                            temp = [i[0],'None']
+                                            vintagecsv.writerow(temp)
+                                        # Write down info of anime
+                                        rating = data.findAll('ratings')
+                                        if len(rating)>0:
+                                            temp1 = [i[0],data.anime['name'],data.anime['type'],data.anime['precision'],num,rating[0]['nb_votes'],rating[0]['weighted_score']]
+                                        else:
+                                            temp1 = [i[0],data.anime['name'],data.anime['type'],data.anime['precision'],num]
+                                        print(temp1)
+                                        filmcsv.writerow(temp1)
